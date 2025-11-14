@@ -5,26 +5,10 @@ from datetime import datetime
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, 
                              QWidget, QLabel, QLineEdit, QPushButton, QFileDialog,
                              QDateTimeEdit, QMessageBox, QFrame, QGroupBox, QCheckBox,
-                             QProgressBar, QTextEdit, QTabWidget)
+                             QProgressBar, QTextEdit, QTabWidget, QListWidget, QListWidgetItem)
 from PyQt5.QtCore import Qt, QDateTime, QTimer, pyqtSignal
 from PyQt5.QtGui import QFont, QPalette, QColor, QIcon
 import file_time_changer  # 直接引用你提供的模块
-
-class ModernProgressBar(QProgressBar):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setStyleSheet("""
-            QProgressBar {
-                border: 1px solid #cccccc;
-                border-radius: 6px;
-                text-align: center;
-                background-color: #f0f0f0;
-            }
-            QProgressBar::chunk {
-                background-color: #0078d4;
-                border-radius: 5px;
-            }
-        """)
 
 class FileTimeChangerUI(QMainWindow):
     def __init__(self):
@@ -32,9 +16,9 @@ class FileTimeChangerUI(QMainWindow):
         self.init_ui()
         
     def init_ui(self):
-        self.setWindowTitle("文件时间修改工具 - Windows 11 风格")
-        self.setGeometry(300, 200, 800, 600)
-        self.setMinimumSize(700, 500)
+        self.setWindowTitle("文件时间修改工具")
+        self.setGeometry(300, 200, 1000, 700)
+        self.setMinimumSize(900, 600)
         
         # 设置窗口图标 (使用系统图标或自定义)
         try:
@@ -61,8 +45,8 @@ class FileTimeChangerUI(QMainWindow):
             QLabel {
                 font-size: 24px;
                 font-weight: bold;
-                color: #000000;
-                padding: 10px;
+                color: #2c3e50;
+                padding: 20px;
             }
         """)
         main_layout.addWidget(title_label)
@@ -83,13 +67,13 @@ class FileTimeChangerUI(QMainWindow):
         log_group = QGroupBox("操作日志")
         log_layout = QVBoxLayout(log_group)
         self.log_text = QTextEdit()
-        self.log_text.setMaximumHeight(120)
+        self.log_text.setMaximumHeight(150)
         self.log_text.setReadOnly(True)
         log_layout.addWidget(self.log_text)
         main_layout.addWidget(log_group)
         
         # 进度条
-        self.progress_bar = ModernProgressBar()
+        self.progress_bar = QProgressBar()
         self.progress_bar.setVisible(False)
         main_layout.addWidget(self.progress_bar)
         
@@ -112,7 +96,7 @@ class FileTimeChangerUI(QMainWindow):
         self.file_path_edit.setPlaceholderText("选择文件或文件夹...")
         file_selector_layout.addWidget(self.file_path_edit)
         
-        self.browse_button = QPushButton("浏览")
+        self.browse_button = QPushButton("浏览...")
         self.browse_button.clicked.connect(self.browse_file)
         file_selector_layout.addWidget(self.browse_button)
         
@@ -182,23 +166,6 @@ class FileTimeChangerUI(QMainWindow):
         # 操作按钮
         button_layout = QHBoxLayout()
         self.apply_button = QPushButton("应用修改")
-        self.apply_button.setStyleSheet("""
-            QPushButton {
-                background-color: #0078d4;
-                color: white;
-                border: none;
-                padding: 8px 16px;
-                border-radius: 4px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #106ebe;
-            }
-            QPushButton:disabled {
-                background-color: #cccccc;
-                color: #666666;
-            }
-        """)
         self.apply_button.clicked.connect(self.apply_changes)
         button_layout.addWidget(self.apply_button)
         
@@ -221,7 +188,7 @@ class FileTimeChangerUI(QMainWindow):
         self.folder_path_edit.setPlaceholderText("选择包含文件的文件夹...")
         folder_selector_layout.addWidget(self.folder_path_edit)
         
-        self.browse_folder_button = QPushButton("浏览文件夹")
+        self.browse_folder_button = QPushButton("浏览文件夹...")
         self.browse_folder_button.clicked.connect(self.browse_folder)
         folder_selector_layout.addWidget(self.browse_folder_button)
         
@@ -241,23 +208,23 @@ class FileTimeChangerUI(QMainWindow):
         self.recursive_check.setChecked(True)
         folder_layout.addWidget(self.recursive_check)
         
+        # 文件列表
+        files_label = QLabel("文件列表:")
+        folder_layout.addWidget(files_label)
+        
+        self.files_list = QListWidget()
+        folder_layout.addWidget(self.files_list)
+        
+        # 刷新文件列表按钮
+        refresh_button = QPushButton("刷新文件列表")
+        refresh_button.clicked.connect(self.refresh_file_list)
+        folder_layout.addWidget(refresh_button)
+        
         layout.addWidget(folder_group)
         
         # 批量时间设置
         batch_time_group = QGroupBox("批量时间设置")
         batch_time_layout = QVBoxLayout(batch_time_group)
-        
-        batch_time_buttons_layout = QHBoxLayout()
-        
-        same_time_btn = QPushButton("所有文件设为相同时间")
-        same_time_btn.clicked.connect(self.set_batch_same_time)
-        batch_time_buttons_layout.addWidget(same_time_btn)
-        
-        preserve_btn = QPushButton("保持相对时间")
-        preserve_btn.clicked.connect(self.set_batch_preserve_relative)
-        batch_time_buttons_layout.addWidget(preserve_btn)
-        
-        batch_time_layout.addLayout(batch_time_buttons_layout)
         
         # 批量时间选择
         batch_datetime_layout = QHBoxLayout()
@@ -269,28 +236,28 @@ class FileTimeChangerUI(QMainWindow):
         batch_datetime_layout.addStretch()
         
         batch_time_layout.addLayout(batch_datetime_layout)
+        
+        # 时间类型选项
+        time_types_layout = QHBoxLayout()
+        self.batch_creation_check = QCheckBox("修改创建时间")
+        self.batch_creation_check.setChecked(True)
+        time_types_layout.addWidget(self.batch_creation_check)
+        
+        self.batch_modified_check = QCheckBox("修改修改时间")
+        self.batch_modified_check.setChecked(True)
+        time_types_layout.addWidget(self.batch_modified_check)
+        
+        self.batch_access_check = QCheckBox("修改访问时间")
+        self.batch_access_check.setChecked(True)
+        time_types_layout.addWidget(self.batch_access_check)
+        
+        batch_time_layout.addLayout(time_types_layout)
+        
         layout.addWidget(batch_time_group)
         
         # 批量操作按钮
         batch_button_layout = QHBoxLayout()
         self.batch_apply_button = QPushButton("执行批量修改")
-        self.batch_apply_button.setStyleSheet("""
-            QPushButton {
-                background-color: #107c10;
-                color: white;
-                border: none;
-                padding: 8px 16px;
-                border-radius: 4px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #0e6a0e;
-            }
-            QPushButton:disabled {
-                background-color: #cccccc;
-                color: #666666;
-            }
-        """)
         self.batch_apply_button.clicked.connect(self.apply_batch_changes)
         batch_button_layout.addWidget(self.batch_apply_button)
         
@@ -300,10 +267,10 @@ class FileTimeChangerUI(QMainWindow):
         return widget
     
     def set_modern_style(self):
-        # 设置现代化样式表
+        # 设置现代化样式表，与PyInstaller GUI保持一致
         self.setStyleSheet("""
             QMainWindow {
-                background-color: #f3f3f3;
+                background-color: #f5f5f5;
             }
             QWidget {
                 font-family: "Segoe UI", Arial, sans-serif;
@@ -312,8 +279,8 @@ class FileTimeChangerUI(QMainWindow):
             QGroupBox {
                 font-weight: bold;
                 border: 1px solid #cccccc;
-                border-radius: 6px;
-                margin-top: 10px;
+                border-radius: 5px;
+                margin-top: 1ex;
                 padding-top: 10px;
             }
             QGroupBox::title {
@@ -322,33 +289,38 @@ class FileTimeChangerUI(QMainWindow):
                 padding: 0 5px 0 5px;
             }
             QLineEdit {
-                border: 1px solid #cccccc;
-                border-radius: 4px;
                 padding: 6px;
+                border: 1px solid #cccccc;
+                border-radius: 3px;
                 background-color: white;
             }
             QLineEdit:focus {
-                border: 1px solid #0078d4;
+                border: 1px solid #2c3e50;
             }
             QPushButton {
-                background-color: #e1e1e1;
-                border: 1px solid #cccccc;
+                background-color: #2c3e50;
+                color: white;
+                border: none;
+                padding: 8px 16px;
                 border-radius: 4px;
-                padding: 6px 12px;
-                font-weight: normal;
+                font-weight: bold;
             }
             QPushButton:hover {
-                background-color: #d5d5d5;
+                background-color: #34495e;
             }
             QPushButton:pressed {
-                background-color: #c9c9c9;
+                background-color: #1a252f;
+            }
+            QPushButton:disabled {
+                background-color: #95a5a6;
+                color: #7f8c8d;
             }
             QCheckBox {
                 spacing: 5px;
             }
             QCheckBox::indicator {
-                width: 15px;
-                height: 15px;
+                width: 16px;
+                height: 16px;
             }
             QCheckBox::indicator:unchecked {
                 border: 1px solid #cccccc;
@@ -356,27 +328,28 @@ class FileTimeChangerUI(QMainWindow):
                 border-radius: 2px;
             }
             QCheckBox::indicator:checked {
-                border: 1px solid #0078d4;
-                background-color: #0078d4;
+                border: 1px solid #2c3e50;
+                background-color: #2c3e50;
                 border-radius: 2px;
             }
             QDateTimeEdit {
                 border: 1px solid #cccccc;
-                border-radius: 4px;
+                border-radius: 3px;
                 padding: 4px;
                 background-color: white;
             }
             QTabWidget::pane {
                 border: 1px solid #cccccc;
-                border-radius: 4px;
+                border-radius: 3px;
+                background-color: white;
             }
             QTabBar::tab {
-                background-color: #e1e1e1;
+                background-color: #ecf0f1;
                 border: 1px solid #cccccc;
                 padding: 8px 16px;
                 margin-right: 2px;
-                border-top-left-radius: 4px;
-                border-top-right-radius: 4px;
+                border-top-left-radius: 3px;
+                border-top-right-radius: 3px;
             }
             QTabBar::tab:selected {
                 background-color: white;
@@ -384,8 +357,24 @@ class FileTimeChangerUI(QMainWindow):
             }
             QTextEdit {
                 border: 1px solid #cccccc;
-                border-radius: 4px;
+                border-radius: 3px;
                 background-color: white;
+                padding: 8px;
+            }
+            QListWidget {
+                border: 1px solid #cccccc;
+                border-radius: 3px;
+                background-color: white;
+            }
+            QProgressBar {
+                border: 1px solid #cccccc;
+                border-radius: 3px;
+                text-align: center;
+                background-color: #ecf0f1;
+            }
+            QProgressBar::chunk {
+                background-color: #3498db;
+                border-radius: 2px;
             }
         """)
     
@@ -403,7 +392,46 @@ class FileTimeChangerUI(QMainWindow):
         )
         if folder_path:
             self.folder_path_edit.setText(folder_path)
-            self.log(f"已选择文件夹: {folder_path}")
+            self.refresh_file_list()
+    
+    def refresh_file_list(self):
+        folder_path = self.folder_path_edit.text().strip()
+        if not folder_path or not os.path.exists(folder_path):
+            return
+        
+        self.files_list.clear()
+        
+        # 获取文件过滤器
+        file_filter = self.filter_edit.text().strip()
+        if file_filter:
+            filters = [f.strip() for f in file_filter.split(',')]
+        else:
+            filters = ['*']
+        
+        # 收集文件
+        files = []
+        if self.recursive_check.isChecked():
+            for root, dirs, filenames in os.walk(folder_path):
+                for filename in filenames:
+                    for file_filter in filters:
+                        if filename.lower().endswith(file_filter.replace('*', '').lower()) or file_filter == '*':
+                            files.append(os.path.join(root, filename))
+                            break
+        else:
+            for filename in os.listdir(folder_path):
+                file_path = os.path.join(folder_path, filename)
+                if os.path.isfile(file_path):
+                    for file_filter in filters:
+                        if filename.lower().endswith(file_filter.replace('*', '').lower()) or file_filter == '*':
+                            files.append(file_path)
+                            break
+        
+        # 添加到列表
+        for file_path in files:
+            item = QListWidgetItem(file_path)
+            self.files_list.addItem(item)
+        
+        self.log(f"已找到 {len(files)} 个文件")
     
     def set_current_time(self):
         current_time = QDateTime.currentDateTime()
@@ -417,16 +445,6 @@ class FileTimeChangerUI(QMainWindow):
         self.modified_check.setChecked(False)
         self.access_check.setChecked(False)
         self.log("已清空时间选择")
-    
-    def set_batch_same_time(self):
-        # 设置批量操作为相同时间
-        self.log("批量操作模式: 所有文件设为相同时间")
-        QMessageBox.information(self, "批量设置", "所有文件将被设置为相同的时间")
-    
-    def set_batch_preserve_relative(self):
-        # 设置批量操作为保持相对时间
-        self.log("批量操作模式: 保持文件间的相对时间")
-        QMessageBox.information(self, "批量设置", "将保持文件间的相对时间关系")
     
     def apply_changes(self):
         file_path = self.file_path_edit.text().strip()
@@ -495,18 +513,61 @@ class FileTimeChangerUI(QMainWindow):
             QMessageBox.warning(self, "错误", "选择的文件夹不存在")
             return
         
-        # 这里可以实现批量修改逻辑
-        # 由于时间关系，这里只显示提示
-        QMessageBox.information(
-            self, 
-            "批量操作", 
-            f"将对文件夹 '{folder_path}' 中的文件进行批量时间修改\n"
-            f"文件过滤: {self.filter_edit.text() or '所有文件'}\n"
-            f"包含子文件夹: {'是' if self.recursive_check.isChecked() else '否'}"
-        )
+        if self.files_list.count() == 0:
+            QMessageBox.warning(self, "错误", "没有找到可操作的文件")
+            return
         
-        self.log(f"开始批量修改文件夹: {folder_path}")
-        # 实际实现时需要遍历文件并调用file_time_changer.set_file_time
+        if not (self.batch_creation_check.isChecked() or 
+                self.batch_modified_check.isChecked() or 
+                self.batch_access_check.isChecked()):
+            QMessageBox.warning(self, "错误", "请至少选择一个要修改的时间选项")
+            return
+        
+        try:
+            # 显示进度
+            self.progress_bar.setVisible(True)
+            self.progress_bar.setRange(0, self.files_list.count())
+            
+            # 获取设置的时间
+            target_time = self.batch_datetime.dateTime().toPyDateTime()
+            
+            # 处理每个文件
+            success_count = 0
+            for i in range(self.files_list.count()):
+                file_path = self.files_list.item(i).text()
+                
+                # 准备时间参数
+                creation_time = target_time if self.batch_creation_check.isChecked() else None
+                last_write_time = target_time if self.batch_modified_check.isChecked() else None
+                last_access_time = target_time if self.batch_access_check.isChecked() else None
+                
+                try:
+                    # 调用file_time_changer模块
+                    file_time_changer.set_file_time(
+                        file_path, 
+                        creation_time, 
+                        last_access_time, 
+                        last_write_time
+                    )
+                    success_count += 1
+                    self.log(f"成功修改: {os.path.basename(file_path)}")
+                except Exception as e:
+                    self.log(f"失败: {os.path.basename(file_path)} - {str(e)}")
+                
+                self.progress_bar.setValue(i + 1)
+                QApplication.processEvents()
+            
+            self.progress_bar.setVisible(False)
+            
+            result_msg = f"批量修改完成: 成功 {success_count}/{self.files_list.count()} 个文件"
+            self.log(result_msg)
+            QMessageBox.information(self, "完成", result_msg)
+            
+        except Exception as e:
+            self.progress_bar.setVisible(False)
+            error_msg = f"批量修改时出错: {str(e)}"
+            self.log(error_msg)
+            QMessageBox.critical(self, "错误", error_msg)
     
     def log(self, message):
         timestamp = datetime.now().strftime("%H:%M:%S")
@@ -530,6 +591,10 @@ def main():
     # 设置应用程序属性
     app.setApplicationName("文件时间修改工具")
     app.setApplicationVersion("1.0")
+    
+    # 设置应用程序字体
+    font = QFont("Microsoft YaHei", 10)
+    app.setFont(font)
     
     # 创建并显示主窗口
     window = FileTimeChangerUI()
