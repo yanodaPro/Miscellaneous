@@ -132,7 +132,7 @@ BiliDownloader/
 - 模块化设计，易于维护和扩展
 
 ## 📄 许可证
-本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
+本项目采用 MIT 许可证 - 详见 [LICENSE](https://github.com/yanodaPro/Miscellaneous/blob/main/BiliDownloader/LICENSE) 文件
 
 ## 🤝 贡献
 欢迎提交 Issue 和 Pull Request！
