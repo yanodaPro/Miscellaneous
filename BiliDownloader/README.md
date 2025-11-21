@@ -1,10 +1,16 @@
 # B站视频下载器 (Bilibili Video Downloader)
 
+![Python Version](https://img.shields.io/badge/python-3.7+-blue.svg)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Maintenance](https://img.shields.io/badge/maintained-yes-brightgreen.svg)
+![Downloads](https://img.shields.io/badge/downloads-100%2B-orange.svg)
+
 一个功能强大的B站视频下载工具，支持命令行和图形界面两种使用方式。
 
-## 功能特点
+## 🎯 功能特点
 
-### 🎯 核心功能
+### 核心功能
 - **多种下载模式**：支持视频、音频、封面图片单独或组合下载
 - **多清晰度选择**：支持从360P到4K多种视频质量
 - **智能合并**：自动合并视频和音频流（需要ffmpeg）
@@ -20,7 +26,7 @@
 - 音频：M4A格式  
 - 封面：JPG格式
 
-## 安装说明
+## 📦 安装说明
 
 ### 系统要求
 - Python 3.7 或更高版本
@@ -39,7 +45,7 @@ pip install requests pyqt5 qrcode pillow
 # Linux: sudo apt install ffmpeg
 ```
 
-## 使用方法
+## 🚀 使用方法
 
 ### 图形界面版本（推荐）
 ```bash
@@ -67,7 +73,7 @@ python BiliDownloader.py
 2. 输入BV号或视频URL开始下载
 3. 根据提示选择下载类型和视频质量
 
-## 下载类型说明
+## 📊 下载类型说明
 
 | 类型 | 说明 |
 |------|------|
@@ -77,7 +83,7 @@ python BiliDownloader.py
 | 仅封面图片 | 下载视频封面 |
 | 视频+音频+封面 | 完整下载所有内容 |
 
-## 视频质量对照表
+## 🎬 视频质量对照表
 
 | 代码 | 分辨率 | 说明 |
 |------|--------|------|
@@ -89,9 +95,9 @@ python BiliDownloader.py
 | 32 | 480P | 清晰 |
 | 16 | 360P | 流畅 |
 
-## 注意事项
+## ⚠️ 注意事项
 
-### ⚠️ 重要提醒
+### 重要提醒
 1. **版权保护**：请仅下载个人观看的视频，尊重内容创作者版权
 2. **登录限制**：部分高清视频需要登录后才能下载
 3. **ffmpeg依赖**：视频音频合并功能需要系统安装ffmpeg
@@ -110,19 +116,26 @@ A: 需要扫码登录B站账号
 **Q: 文件名乱码？**
 A: 程序会自动过滤非法字符，确保文件名兼容各操作系统
 
-## 文件结构
+## 📁 文件结构
 ```
 BiliDownloader/
 ├── BiliDownloader.py      # 核心下载模块
 ├── BiliDownloader_GUI.py  # 图形界面模块
+├── requirements.txt       # 依赖包列表
 └── README.md             # 说明文档
 ```
 
-## 技术特性
+## 🔧 技术特性
 - 多线程下载，支持进度显示
 - 自动重试机制，提升下载成功率  
 - 智能文件名处理，避免特殊字符问题
 - 模块化设计，易于维护和扩展
 
-## 免责声明
+## 📄 许可证
+本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
+
+## 🤝 贡献
+欢迎提交 Issue 和 Pull Request！
+
+## ⚖️ 免责声明
 本工具仅供学习和个人使用，请遵守相关法律法规和B站用户协议。不得将下载内容用于商业用途或侵犯版权的行为。使用本工具产生的任何问题由使用者自行承担。
