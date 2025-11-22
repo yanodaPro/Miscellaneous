@@ -189,26 +189,42 @@ class BilibiliVideoDownloader:
         """选择视频质量"""
         print("\n可选清晰度:")
         quality_map = {
-            120: '4K 超清',
-            116: '1080P 60帧',
-            112: '1080P+ 高码率',
-            80: '1080P 高清',
-            64: '720P 高清',
-            32: '480P 清晰',
-            16: '360P 流畅'
+            127: ('8K 超高清', True),
+            126: ('4K 杜比视界', True),
+            120: ('4K 超清', True),
+            116: ('1080P 60帧', True),
+            112: ('1080P+ 高码率', True),
+            80: ('1080P 高清', True),
+            64: ('720P 高清', False),
+            32: ('480P 清晰', False),
+            16: ('360P 流畅', False)
         }
         
         available_qualities = []
         for qn in quality_list:
             if qn in quality_map:
-                print(f"{qn}: {quality_map[qn]}")
+                name, need_login = quality_map[qn]
+                login_status = " (需登录)" if need_login and not self.is_logged_in else ""
+                print(f"{qn}: {name}{login_status}")
                 available_qualities.append(qn)
         
         while True:
             try:
                 choice = int(input("请选择清晰度编号: "))
                 if choice in available_qualities:
-                    return choice
+                    # 检查是否需要登录但未登录
+                    if quality_map[choice][1] and not self.is_logged_in:
+                        print("此清晰度需要登录才能下载，请先登录")
+                        login_choice = input("是否现在登录? (y/n): ").lower()
+                        if login_choice == 'y':
+                            if self.qr_login():
+                                return choice
+                            else:
+                                print("登录失败，请重新选择清晰度")
+                        else:
+                            print("请重新选择清晰度")
+                    else:
+                        return choice
                 else:
                     print("无效的选择，请重新输入")
             except ValueError:
