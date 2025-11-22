@@ -1,11 +1,12 @@
 # B站视频下载器 (Bilibili Video Downloader)
 
 [![Python Version](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](https://github.com/yourusername/BiliDownloader)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/yourusername/BiliDownloader.svg?style=social)](https://github.com/yourusername/BiliDownloader/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/yourusername/BiliDownloader.svg?style=social)](https://github.com/yourusername/BiliDownloader/network/members)
-[![GitHub issues](https://img.shields.io/github/issues/yourusername/BiliDownloader.svg)](https://github.com/yourusername/BiliDownloader/issues)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](https://github.com/yanodaPro/Miscellaneous/tree/main/BiliDownloader)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/yanodaPro/Miscellaneous/blob/main/LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/yanodaPro/Miscellaneous.svg?style=social)](https://github.com/yanodaPro/Miscellaneous/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/yanodaPro/Miscellaneous.svg?style=social)](https://github.com/yanodaPro/Miscellaneous/network/members)
+[![GitHub issues](https://img.shields.io/github/issues/yanodaPro/Miscellaneous.svg)](https://github.com/yanodaPro/Miscellaneous/issues)
+[![GitHub last commit](https://img.shields.io/github/last-commit/yanodaPro/Miscellaneous.svg)](https://github.com/yanodaPro/Miscellaneous/commits/main)
 
 一个功能强大的B站视频下载工具，支持命令行和图形界面两种使用方式。
 
@@ -154,9 +155,6 @@ BiliDownloader/
 ├── requirements.txt           # 依赖包列表
 ├── LICENSE                    # 许可证文件
 ├── README.md                  # 说明文档
-└── examples/                  # 使用示例
-    ├── batch_download.py      # 批量下载脚本
-    └── api_usage.py           # API使用示例
 ```
 
 ## 🔧 技术特性
@@ -179,8 +177,8 @@ BiliDownloader/
 
 ### 开发环境设置
 ```bash
-git clone https://github.com/yourusername/BiliDownloader.git
-cd BiliDownloader
+git clone https://github.com/yanodaPro/Miscellaneous.git
+cd Miscellaneous/BiliDownloader
 pip install -r requirements.txt
 ```
 
