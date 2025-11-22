@@ -1,0 +1,4 @@
+PyQt5>=5.15.0
+requests>=2.25.0
+qrcode>=7.0
+Pillow>=8.0.0
