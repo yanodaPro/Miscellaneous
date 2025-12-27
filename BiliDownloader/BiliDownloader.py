@@ -9,9 +9,10 @@ from typing import Optional, Dict, Any, List
 import qrcode
 from PIL import Image
 import threading
+from datetime import datetime, timedelta  # 添加 timedelta 导入
 
 class BilibiliVideoDownloader:
-    def __init__(self):
+    def __init__(self, cookies_file: str = "bilibili_cookies.json"):
         self.session = requests.Session()
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -20,6 +21,113 @@ class BilibiliVideoDownloader:
         self.session.headers.update(self.headers)
         self.is_logged_in = False
         self.cookies = None
+        self.cookies_file = cookies_file
+        self.user_info = None
+        
+        # 尝试从文件加载Cookie
+        self.load_cookies()
+
+    def load_cookies(self):
+        """从文件加载保存的Cookie"""
+        try:
+            if os.path.exists(self.cookies_file):
+                with open(self.cookies_file, 'r', encoding='utf-8') as f:
+                    cookie_data = json.load(f)
+                    
+                    # 检查Cookie是否过期
+                    if 'expiry_time' in cookie_data:
+                        expiry_time = datetime.fromisoformat(cookie_data['expiry_time'])
+                        if expiry_time < datetime.now():
+                            print("Cookie已过期，需要重新登录")
+                            return False
+                    
+                    # 加载Cookie到session
+                    cookies = cookie_data.get('cookies', {})
+                    for name, value in cookies.items():
+                        self.session.cookies.set(name, value)
+                    
+                    # 加载用户信息
+                    self.user_info = cookie_data.get('user_info', None)
+                    self.is_logged_in = True
+                    self.cookies = cookies
+                    
+                    # 验证Cookie是否仍然有效
+                    if self.verify_login():
+                        print(f"✓ 已从 {self.cookies_file} 恢复登录状态")
+                        if self.user_info:
+                            print(f"   用户: {self.user_info.get('uname', '未知用户')}")
+                        return True
+                    else:
+                        print("Cookie已失效，需要重新登录")
+                        self.is_logged_in = False
+                        self.cookies = None
+                        self.user_info = None
+                        return False
+            return False
+        except Exception as e:
+            print(f"加载Cookie失败: {str(e)}")
+            return False
+
+    def save_cookies(self):
+        """保存Cookie到文件"""
+        try:
+            if not self.cookies:
+                return False
+            
+            # 获取用户信息（如果未获取）
+            if not self.user_info:
+                self.get_user_info()
+            
+            # 准备保存的数据
+            cookie_data = {
+                'cookies': self.cookies,
+                'user_info': self.user_info,
+                'save_time': datetime.now().isoformat(),
+                'expiry_time': (datetime.now() + timedelta(days=7)).isoformat(),  # 7天后过期
+            }
+            
+            with open(self.cookies_file, 'w', encoding='utf-8') as f:
+                json.dump(cookie_data, f, ensure_ascii=False, indent=2)
+            
+            print(f"✓ Cookie已保存到 {self.cookies_file}")
+            return True
+        except Exception as e:
+            print(f"保存Cookie失败: {str(e)}")
+            return False
+
+    def verify_login(self) -> bool:
+        """验证登录状态是否有效"""
+        try:
+            # 调用一个需要登录的API来验证
+            api_url = "https://api.bilibili.com/x/web-interface/nav"
+            response = self.session.get(api_url)
+            data = response.json()
+            
+            if data['code'] == 0 and data['data']['isLogin']:
+                return True
+            return False
+        except:
+            return False
+
+    def get_user_info(self):
+        """获取用户信息"""
+        try:
+            api_url = "https://api.bilibili.com/x/web-interface/nav"
+            response = self.session.get(api_url)
+            data = response.json()
+            
+            if data['code'] == 0 and data['data']['isLogin']:
+                self.user_info = {
+                    'uid': data['data']['mid'],
+                    'uname': data['data']['uname'],
+                    'face': data['data']['face'],
+                    'vipStatus': data['data']['vipStatus'],
+                }
+                return self.user_info
+            return None
+        except Exception as e:
+            print(f"获取用户信息失败: {str(e)}")
+            return None
 
     def extract_bvid(self, input_str: str) -> Optional[str]:
         """从输入中提取BV号"""
@@ -88,7 +196,11 @@ class BilibiliVideoDownloader:
                 pass
             
             # 轮询检查登录状态
-            return self._check_login_status(qrcode_key)
+            if self._check_login_status(qrcode_key):
+                # 登录成功后保存Cookie
+                self.save_cookies()
+                return True
+            return False
             
         except Exception as e:
             print(f"登录过程中出错: {str(e)}")
@@ -110,6 +222,12 @@ class BilibiliVideoDownloader:
                         print("登录成功!")
                         self.is_logged_in = True
                         self.cookies = self.session.cookies.get_dict()
+                        
+                        # 获取用户信息
+                        user_info = self.get_user_info()
+                        if user_info:
+                            print(f"欢迎，{user_info['uname']}!")
+                        
                         return True
                     elif data['code'] == 86038:  # 二维码过期
                         print("二维码已过期，请重新运行程序")
@@ -127,6 +245,28 @@ class BilibiliVideoDownloader:
         
         print("登录超时")
         return False
+
+    def logout(self):
+        """退出登录，清除Cookie"""
+        try:
+            self.is_logged_in = False
+            self.cookies = None
+            self.user_info = None
+            
+            # 清除session中的cookie
+            self.session.cookies.clear()
+            
+            # 删除Cookie文件
+            if os.path.exists(self.cookies_file):
+                os.remove(self.cookies_file)
+                print(f"✓ 已退出登录，Cookie文件已删除")
+            else:
+                print("✓ 已退出登录")
+                
+            return True
+        except Exception as e:
+            print(f"退出登录失败: {str(e)}")
+            return False
 
     def get_video_play_url(self, bvid: str, cid: str, quality: int = 80) -> Dict[str, Any]:
         """获取视频播放地址"""
@@ -204,8 +344,9 @@ class BilibiliVideoDownloader:
         for qn in quality_list:
             if qn in quality_map:
                 name, need_login = quality_map[qn]
-                login_status = " (需登录)" if need_login and not self.is_logged_in else ""
-                print(f"{qn}: {name}{login_status}")
+                if need_login and not self.is_logged_in:
+                    name = f"{name} (需登录)"
+                print(f"{qn}: {name}")
                 available_qualities.append(qn)
         
         while True:
@@ -464,42 +605,115 @@ class BilibiliVideoDownloader:
             # 使用原来的下载方式
             return self._download_file(url, filename)
 
+
 def main():
     downloader = BilibiliVideoDownloader()
-    
+
     print("=" * 50)
-    print("B站视频下载器")
+    print("B站视频下载器 (支持Cookie保存)")
     print("=" * 50)
-    
-    # 询问是否登录
-    login_choice = input("是否扫码登录以获取高清视频? (y/n): ").lower()
-    if login_choice == 'y':
-        if downloader.qr_login():
-            print("登录状态: 已登录")
-        else:
-            print("登录状态: 未登录")
+
+    # 显示当前登录状态
+    if downloader.is_logged_in:
+        print(f"✓ 当前已登录: {downloader.user_info.get('uname', '未知用户')}")
+        print(f"   UID: {downloader.user_info.get('uid', '未知')}")
     else:
-        print("登录状态: 未登录")
-    
+        print("✗ 当前未登录 (部分高清画质需要登录)")
+
+    # 根据登录状态显示不同的登录菜单
+    print("\n登录选项:")
+    if downloader.is_logged_in:
+        # 已登录时只显示退出登录选项
+        print("1: 退出登录")
+        print("2: 直接开始下载")
+        login_choice = input("请选择 (1/2): ").strip()
+
+        if login_choice == '1':
+            downloader.logout()
+        elif login_choice == '2':
+            pass  # 直接开始下载
+        else:
+            print("无效的选择，将直接开始下载")
+    else:
+        # 未登录时只显示扫码登录选项
+        print("1: 扫码登录")
+        print("2: 直接开始下载 (部分画质受限)")
+        login_choice = input("请选择 (1/2): ").strip()
+
+        if login_choice == '1':
+            if downloader.qr_login():
+                print("登录成功!")
+            else:
+                print("登录失败!")
+        elif login_choice == '2':
+            pass  # 直接开始下载
+        else:
+            print("无效的选择，将直接开始下载")
+
     while True:
         print("\n" + "=" * 30)
-        input_str = input("请输入BV号或视频URL (输入 'quit' 退出): ").strip()
-        
-        if input_str.lower() == 'quit':
-            break
-        
-        if not input_str:
-            continue
-        
-        # 开始下载
-        success = downloader.download_video_by_bvid(input_str)
-        
-        if success:
-            print("下载成功!")
+        print("1: 下载视频")
+        print("2: 查看登录状态")
+
+        # 根据登录状态显示不同的退出选项
+        if downloader.is_logged_in:
+            print("3: 退出登录")
+            print("4: 退出程序")
+            menu_range = "1-4"
         else:
-            print("下载失败!")
-        
-        time.sleep(1)
+            print("3: 退出程序")
+            menu_range = "1-3"
+
+        choice = input(f"请选择 ({menu_range}): ").strip()
+
+        if choice == '1':
+            input_str = input("请输入BV号或视频URL: ").strip()
+            if not input_str:
+                print("输入为空，请重新输入")
+                continue
+
+            # 开始下载
+            success = downloader.download_video_by_bvid(input_str)
+
+            if success:
+                print("下载成功!")
+            else:
+                print("下载失败!")
+
+            time.sleep(1)
+
+        elif choice == '2':
+            if downloader.is_logged_in:
+                print(f"✓ 已登录: {downloader.user_info.get('uname', '未知用户')}")
+                print(f"   UID: {downloader.user_info.get('uid', '未知')}")
+                print(f"   VIP状态: {'是' if downloader.user_info.get('vipStatus', 0) == 1 else '否'}")
+            else:
+                print("✗ 未登录")
+                print("提示: 登录后可下载更高画质的视频")
+                relogin = input("是否登录? (y/n): ").lower()
+                if relogin == 'y':
+                    downloader.qr_login()
+
+        elif choice == '3':
+            if downloader.is_logged_in:
+                downloader.logout()
+            else:
+                # 未登录时选择3是退出程序
+                print("感谢使用，再见!")
+                break
+
+        elif choice == '4' and downloader.is_logged_in:
+            print("感谢使用，再见!")
+            break
+
+        elif choice == '3' and not downloader.is_logged_in:
+            # 这行代码已经在上面处理了，这里只是为了完整性
+            print("感谢使用，再见!")
+            break
+
+        else:
+            print(f"无效的选择，请输入{menu_range}")
+
 
 if __name__ == "__main__":
     main()
