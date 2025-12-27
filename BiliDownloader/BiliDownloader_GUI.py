@@ -31,16 +31,6 @@ class DownloadWorker(QThread):
         self.download_path = download_path
         self.is_running = True
 
-        # 设置进度回调
-        self.downloader.set_progress_callback(self.on_download_progress)
-
-    def on_download_progress(self, filename, downloaded, total):
-        """下载进度回调"""
-        if total > 0:
-            progress = int((downloaded / total) * 100)
-            self.progress_signal.emit(filename, progress)
-            self.file_progress_signal.emit(filename, downloaded, total)
-
     def run(self):
         try:
             # 保存原始工作目录
@@ -91,6 +81,7 @@ class BiliDownloaderGUI(QMainWindow):
         self.download_thread = None
         self.current_file = ""
         self.init_ui()
+        self.update_login_status()
 
     def init_ui(self):
         self.setWindowTitle("B站视频下载器 GUI")
@@ -194,7 +185,7 @@ class BiliDownloaderGUI(QMainWindow):
         main_layout = QVBoxLayout(central_widget)
 
         # 标题
-        title_label = QLabel("B站视频下载器")
+        title_label = QLabel("B站视频下载器 (支持Cookie保存)")
         title_label.setAlignment(Qt.AlignCenter)
         title_label.setStyleSheet("""
             QLabel {
@@ -228,6 +219,9 @@ class BiliDownloaderGUI(QMainWindow):
         self.login_btn = QPushButton("扫码登录")
         self.login_btn.clicked.connect(self.login_bilibili)
 
+        self.logout_btn = QPushButton("退出登录")
+        self.logout_btn.clicked.connect(self.logout_bilibili)
+
         self.download_btn = QPushButton("开始下载")
         self.download_btn.clicked.connect(self.start_download)
 
@@ -237,6 +231,7 @@ class BiliDownloaderGUI(QMainWindow):
         button_layout.addWidget(self.clear_btn)
         button_layout.addStretch()
         button_layout.addWidget(self.login_btn)
+        button_layout.addWidget(self.logout_btn)
         button_layout.addWidget(self.download_btn)
 
         main_layout.addLayout(button_layout)
@@ -448,6 +443,17 @@ class BiliDownloaderGUI(QMainWindow):
         if dir_path:
             self.download_dir.setText(dir_path)
 
+    def update_login_status(self):
+        """更新登录状态显示"""
+        if self.downloader.is_logged_in:
+            uname = self.downloader.user_info.get('uname', '未知用户')
+            self.login_status.setText(f"已登录：{uname}")
+            self.login_status.setStyleSheet("color: #27ae60; font-weight: bold;")
+            self.log_output(f"已登录: {uname}")
+        else:
+            self.login_status.setText("未登录")
+            self.login_status.setStyleSheet("color: #e74c3c; font-weight: bold;")
+
     def login_bilibili(self):
         """扫码登录B站"""
         self.log_output("正在生成登录二维码...")
@@ -463,8 +469,8 @@ class BiliDownloaderGUI(QMainWindow):
         try:
             success = self.downloader.qr_login()
             if success:
-                self.login_status.setText("已登录")
-                self.login_status.setStyleSheet("color: #27ae60; font-weight: bold;")
+                # 在UI线程中更新状态
+                self.update_login_status()
                 self.log_output("登录成功!")
             else:
                 self.log_output("登录失败!")
@@ -473,6 +479,18 @@ class BiliDownloaderGUI(QMainWindow):
 
         # 重新启用登录按钮
         self.login_btn.setEnabled(True)
+
+    def logout_bilibili(self):
+        """退出登录"""
+        reply = QMessageBox.question(self, "确认退出", "确定要退出登录吗？",
+                                     QMessageBox.Yes | QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            success = self.downloader.logout()
+            if success:
+                self.update_login_status()
+                self.log_output("已退出登录")
+            else:
+                self.log_output("退出登录失败")
 
     def start_download(self):
         """开始下载"""
